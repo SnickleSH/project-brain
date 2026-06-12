@@ -10,6 +10,13 @@ not a central wiki, and it deliberately carries no agent-framework state
 (no manifests, no progress JSON, no orchestration files). Progress is
 checkbox state plus git history — nothing else.
 
+Its constitution: **weight is acceptable; granularity is not.** Layers may
+grow richer over time — commands improve, skills accumulate, docs densify —
+but units of work stay coarse: one doc per domain, one checklist per design,
+one skill per recurring activity. No per-task, per-sprint, or per-session
+artifacts, ever. A sprint is whichever open checklists you choose to
+`/execute`; `status:` frontmatter plus git is the entire board.
+
 ## The pipeline
 
 Every piece of information moves left to right through four stages, each with
@@ -30,6 +37,7 @@ one command:
 | Synthesis | `1-architecture/` | one settled design doc per feature/domain | stable; amended when reality disagrees |
 | Handoff | `2-checklists/` | commit-sized tasks derived from one design doc | machine-managed; disposable |
 | Record | `3-decisions/` | short ADRs: context → decision → consequences | immutable; superseded, never edited |
+| Reference | `4-reference/` | durable facts: runbooks, API quirks, glossary — one file per topic | append/amend |
 | Archive | `_archive/` | processed inbox notes, moved here by `/plan` | **gitignored**, local-only |
 | Skeletons | `_templates/` | the four document templates the commands use | edit to taste |
 
@@ -75,6 +83,17 @@ transcripts. Anything in the folder is fair game for `/plan`.
 Read every doc `/plan` writes. Synthesis is the step where your judgment
 matters most; a wrong conclusion here propagates into checklists and code.
 
+### `/analyze <doc or theme>` — stress-test a design (pipeline does not advance)
+
+The command for staying in the high-level phase. Reads the design, its links,
+relevant ADRs, and the code it touches, then reports underspecification,
+reality mismatches, unexamined alternatives, cross-doc tension, and risk
+concentration — ranked by how much downstream work each endangers. It never
+edits architecture docs or writes checklists; when the session ends it
+distills durable findings into one inbox note so `/plan` can fold them in.
+It closes by answering the gate question: does interrogation still produce
+new blocking questions? Loop `/analyze` → `/plan` until the answer is no.
+
 ### `/breakdown <architecture-doc>` — design → checklist
 
 Reads the design, its linked docs, **and the actual codebase areas it
@@ -92,6 +111,34 @@ verification, ticks it `[x]`, and stages the code change **and** the checklist
 update together so plan and code can never drift in history. If the real
 codebase contradicts an item, it stops and proposes an amendment upstream
 instead of patching around it. Durable contradictions become draft ADRs.
+
+### `/distill` — grow the skill layer
+
+Skills (`.claude/skills/<slug>/SKILL.md`) are the layer that learns across
+features: reusable, repo-specific *procedures* — how migrations are written
+here, how report queries get tested — auto-discovered by claude-code and
+loaded when relevant. `/distill` mints them under the **rule of three** (a
+procedure must recur three times before it's abstracted) and **extends an
+existing skill before creating a new one**, so the layer stays few-and-rich
+instead of many-and-shallow. Skills hold procedure; `4-reference/` holds
+facts; architecture holds design. This — not sprint files — is how knowledge
+transfers between features: each `/execute` cycle runs a little smarter than
+the last. Subagents (`.claude/agents/`) are the rung above, reserved for
+genuine parallelism/isolation needs; the root `CLAUDE.md` stays the only
+router.
+
+## Mechanical enforcement
+
+The contract is prompt-enforced, and prompt compliance decays — so
+`tools/brain-lint.sh` enforces the invariants in code, as a pre-commit hook
+(installed by `install.sh`): **fails** the commit on credential-looking
+strings in committed brain files and on index↔filesystem drift; **warns** on
+broken wikilinks, missing frontmatter, and inbox notes older than 14 days.
+`BRAIN_LINT_STRICT=1` upgrades warnings to failures. `/tidy` remains the
+judgment-level audit on top; lint is the deterministic floor beneath it.
+Relatedly: architecture docs carry an `## Evidence` section — load-bearing
+facts copied out of source notes before they're archived, so decisions stay
+traceable even though raw notes never reach git.
 
 ## Workflows
 
@@ -115,20 +162,32 @@ appears, individually, without batching or polishing. When several captures
 accumulate on a theme, run one `/plan <theme>` to fold them all in. Capture is
 continuous; synthesis is batched.
 
-### Diving deeper into a topic
+### Diving deeper into a topic (the analysis loop)
 
-A deep dive is the loop at higher resolution on one node of the graph:
+`/analyze` now closes the loop itself: stress-test → discussion → distilled
+inbox note → a single gated question ("fold these findings into the doc
+now?"). Confirm, and it performs the synthesis in the same session; decline,
+and the note waits for a later `/plan`. The gate exists on purpose — an
+ungated loop would have the model interrogating its own design and grading
+its own synthesis with you as a spectator. The discussion in the middle is
+the product.
+
+High-level planning is a loop, not a step — `/plan` once is a first draft of
+what you used to think, not a settled design. The loop:
 
 1. Pick the thin or contested architecture doc (the Obsidian graph view makes
    thin/orphaned nodes visible).
-2. Interrogate it in a claude-code session, anchored on the doc and the code:
-   *"Read brain/1-architecture/X.md and src/X/. Where is the design
-   underspecified? What would block implementation?"*
-3. `/capture` every insight and open question the session produces —
-   **conversations are scratch space; files are memory.** Unrecorded insight
-   is lost when the session ends.
-4. `/plan <topic>` to fold findings back into the doc. If a real trade-off got
-   resolved, it becomes an ADR.
+2. `/analyze <doc>` — structured stress-test against the codebase — or
+   interrogate freely in a plain session for open-ended exploration.
+3. Capture the output: `/analyze` distills its findings into an inbox note
+   itself; in free sessions, `/capture` every insight and open question —
+   **conversations are scratch space; files are memory.**
+4. `/plan <topic>` to fold findings back into the doc. Real trade-offs that
+   get resolved become ADRs.
+5. Repeat until interrogation stops producing new blocking questions. That —
+   not having run `/plan` once — is the gate to `/breakdown`. Descending
+   early is cheap to undo (checklists are disposable; delete and regenerate),
+   but the habit to build is: breakdown only designs you'd bet a sprint on.
 
 ### When reality disagrees with the plan
 
@@ -145,6 +204,27 @@ layer is the asset.
   want splitting.
 - Mark shipped checklists `status: done`. Delete nothing — that's what the
   archive and `status: superseded` are for.
+
+## How the wiki stays organized as it grows
+
+The graph self-organizes only up to a point; past ~15 docs, three mechanisms
+keep it from sprawling:
+
+1. **The routing table.** `1-architecture/_index.md` holds one line per doc
+   stating what it owns. `/plan` consults it before creating anything (so
+   topics route to their existing doc instead of spawning near-duplicates
+   like `auth-flow.md` vs `authentication.md`) and updates it whenever a doc
+   is created, renamed, split, or superseded. It contains pointers only —
+   regenerable navigation, not state.
+2. **The splitting convention.** A doc past ~150 lines, or a domain reaching
+   3+ docs, becomes a subfolder: `<domain>/overview.md` for scope and how the
+   children relate, plus one child per sub-domain with globally unique
+   filenames (wikilinks resolve by filename). Checklists mirror the layout.
+3. **`/tidy`** — a monthly audit that detects index drift, suspected
+   duplicates, broken wikilinks, oversized docs, orphans, designs
+   contradicted by newer ADRs, and stale checklists. It proposes fixes and
+   executes only what you approve; obsolete docs are superseded-and-linked,
+   never deleted.
 
 ## Conventions
 

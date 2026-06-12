@@ -16,6 +16,10 @@ links: []            # source notes, related designs, derived checklist
 ## Interfaces & contracts
 <!-- Public surface this introduces or changes: APIs, schemas, events, CLI. -->
 
+## Evidence
+<!-- Load-bearing facts this design rests on, one line each:
+     "fact — origin, date". Sources get archived; facts must live here. -->
+
 ## Trade-offs resolved
 <!-- One line each: "Chose X over Y because Z." Promote big ones to an ADR. -->
 

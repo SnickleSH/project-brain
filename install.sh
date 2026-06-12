@@ -17,17 +17,32 @@ fi
 echo "Installing brain into: $TARGET"
 
 # 1. Folder structure + templates + README (no clobber)
-mkdir -p "$TARGET/brain"/{0-inbox,1-architecture,2-checklists,3-decisions,_templates,_archive}
+mkdir -p "$TARGET/brain"/{0-inbox,1-architecture,2-checklists,3-decisions,4-reference,_templates,_archive}
 cp -n "$SRC/brain/_templates/"*.md "$TARGET/brain/_templates/" 2>/dev/null || true
 cp -n "$SRC/brain/README.md" "$TARGET/brain/README.md" 2>/dev/null || true
 # .gitkeep so empty stages survive cloning
-for d in 0-inbox 1-architecture 2-checklists 3-decisions; do
+for d in 0-inbox 1-architecture 2-checklists 3-decisions 4-reference; do
   touch "$TARGET/brain/$d/.gitkeep"
 done
 
 # 2. claude-code slash commands (no clobber)
 mkdir -p "$TARGET/.claude/commands"
 cp -n "$SRC/.claude/commands/"*.md "$TARGET/.claude/commands/" 2>/dev/null || true
+
+# 2b. Skills + lint + pre-commit hook
+mkdir -p "$TARGET/.claude/skills" "$TARGET/tools"
+cp -rn "$SRC/.claude/skills/." "$TARGET/.claude/skills/" 2>/dev/null || true
+cp -n "$SRC/tools/brain-lint.sh" "$TARGET/tools/" 2>/dev/null || true
+chmod +x "$TARGET/tools/brain-lint.sh" 2>/dev/null || true
+if [[ -d "$TARGET/.git" ]]; then
+  HOOK="$TARGET/.git/hooks/pre-commit"
+  if [[ ! -f "$HOOK" ]]; then
+    printf '#!/usr/bin/env bash\nexec tools/brain-lint.sh\n' > "$HOOK" && chmod +x "$HOOK"
+    echo "  Installed pre-commit hook -> tools/brain-lint.sh"
+  elif ! grep -q brain-lint "$HOOK"; then
+    echo "  ⚠ Existing pre-commit hook found — add 'tools/brain-lint.sh' to it manually."
+  fi
+fi
 
 # 3. CLAUDE.md — append contract if not already present
 if [[ -f "$TARGET/CLAUDE.md" ]] && grep -q "Project Brain — Operating Contract" "$TARGET/CLAUDE.md"; then

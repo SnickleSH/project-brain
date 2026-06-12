@@ -13,15 +13,33 @@ brain/0-inbox/        raw notes, ideas, meeting dumps, pasted links (unprocessed
 brain/1-architecture/ synthesized design docs (one per feature/domain)
 brain/2-checklists/   actionable technical checklists derived from architecture
 brain/3-decisions/    short ADRs — why we chose X over Y
+brain/4-reference/    durable facts: runbooks, API quirks, glossary (one file per topic)
 brain/_archive/       processed inbox notes — GITIGNORED, local-only, never committed
+.claude/skills/       reusable procedural knowledge, minted by /distill
 ```
 
 Commands (defined in `.claude/commands/`):
 
 - `/plan <topic>` — synthesize inbox notes into an architecture doc
-- `/breakdown <architecture-doc>` — derive a technical checklist from a design
+- `/analyze <doc|theme>` — stress-test a design; findings go to the inbox, pipeline does not advance
+- `/breakdown <architecture-doc>` — derive a technical checklist from a design (only when /analyze stops surfacing blockers)
 - `/execute <checklist>` — implement the next unchecked items as code
 - `/capture <text>` — append a quick note to the inbox
+- `/tidy` — audit the graph for duplicates, broken links, and drift; fixes require confirmation
+- `/distill` — extract a thrice-recurring procedure into a skill in `.claude/skills/`
+
+`tools/brain-lint.sh` mechanically enforces this contract (secrets, index
+drift, broken links, frontmatter); it runs as a pre-commit hook.
+
+## The granularity principle
+
+Weight is acceptable; granularity is not. Layers may grow richer over time
+(better commands, accumulated skills, denser docs) but units of work stay
+coarse: ONE doc per domain, ONE checklist per design, ONE skill per
+recurring activity, ONE reference file per topic. Never create per-task,
+per-sprint, or per-session artifacts. There is no sprint file: a sprint is
+whichever open checklists get /execute'd; `status:` frontmatter + git is
+the whole board.
 
 ## Rules
 
@@ -44,8 +62,37 @@ Commands (defined in `.claude/commands/`):
    so archived notes exist only on the machine that processed them. Anything
    a design depends on must be IN the architecture doc, not linked from the
    archive. Links into `_archive/` are allowed as local breadcrumbs only.
-7. **Frontmatter is minimal.** Only `status`, `created`, and `links`. Resist
+7. **No secrets in the brain.** Raw captures often carry credentials. When
+   writing ANY brain file, redact credential-looking strings (keys, tokens,
+   passwords, connection strings) to `<redacted:kind>`. brain-lint blocks
+   commits containing them; treat a lint failure as: redact, then retry.
+8. **Skills follow the rule of three.** Procedures become `.claude/skills/`
+   entries only on their third recurrence, via /distill, extending an
+   existing skill before creating a new one. Skills hold procedure;
+   `brain/4-reference/` holds facts; architecture holds design. Subagents
+   (`.claude/agents/`) are a last resort for genuine isolation/parallelism —
+   this CLAUDE.md remains the only router.
+9. **Frontmatter is minimal.** Only `status`, `created`, and `links`. Resist
    adding fields.
+
+## Keeping the graph organized as it grows
+
+- **`brain/1-architecture/_index.md` is the routing table.** One line per doc
+  stating what it owns. Before creating ANY new architecture doc, consult the
+  index; if an existing doc owns the topic, update that doc instead. After
+  creating, renaming, splitting, or superseding a doc, update the index in
+  the same operation. The index contains no content — only pointers — so it
+  is navigation, not state.
+- **Splitting convention.** When a doc exceeds ~150 lines or a domain
+  accumulates 3+ docs, split into a subfolder:
+  `1-architecture/<domain>/overview.md` (the parent: scope, how the children
+  relate) plus one child doc per sub-domain. Wikilinks keep resolving by
+  filename, so make child filenames globally unique
+  (`reports-delivery.md`, not `delivery.md`).
+- **Checklists mirror architecture.** A checklist keeps the same relative
+  path/name as the doc it derives from.
+- **Superseding, not deleting.** A doc made obsolete gets
+  `status: superseded`, a link to its replacement, and stays in place.
 
 ## File naming
 
