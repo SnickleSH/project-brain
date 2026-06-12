@@ -150,7 +150,15 @@ traceable even though raw notes never reach git.
 2. `/plan` (no topic) to survey what you actually brought over.
 3. Synthesize one domain at a time, smallest coherent unit first. The inbox
    drains over a few sessions; that's normal, not debt.
-4. **Capture the terrain, not just your intentions**: have claude-code read
+4. **Migrating from an agentic framework (GSD-style):** drag/point `/plan`
+   at the old planning folder — it stages files into the inbox itself. Its
+   docs are ingested as *claims to verify against the code* (they may be
+   stale), resolved trade-offs become ADRs, encoded conventions are
+   `/distill` candidates, and state/progress/task files are deliberately
+   skipped: checklists get re-derived fresh via `/breakdown` once the
+   architecture settles. Rescue genuinely in-flight work by hand with
+   `/capture`.
+5. **Capture the terrain, not just your intentions**: have claude-code read
    the parts of the existing codebase your work touches and `/capture` its
    findings, then `/plan` them. The brain should know how things *are* before
    deciding how they *will be*.
