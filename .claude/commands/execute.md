@@ -18,14 +18,28 @@ You are performing **Stage 3 → code execution** of the brain pipeline.
 2. Select work:
    - If I specified item numbers or a count, take those.
    - Otherwise take the next **one** unchecked item.
+   - If I selected multiple items and two or more are genuinely
+     independent (touch different files, no shared "done when", no
+     ordering dependency), say so and offer to delegate them to parallel
+     subagents — one Agent per independent item — instead of doing them
+     serially. Keep dependent or same-file items on the main thread to
+     avoid conflicting edits. Per CLAUDE.md, subagents are a last resort
+     for real isolation/parallelism, so only suggest this when the
+     parallelism is real; ask before spawning.
 
-3. For each selected item:
+3. For each selected item (or for each subagent, if delegating):
    - Implement it exactly as scoped. If the item turns out to be wrong or
      underspecified against the real codebase, stop and tell me what you
      found — propose a checklist or architecture amendment instead of
      improvising.
    - Run the item's "done when" verification (tests, build, manual command).
    - Mark it `[x]` in the checklist file.
+
+   When delegating, give each subagent the single item's full scope and
+   its "done when" check, and have it report back the diff plus whether
+   verification passed. Mark each item `[x]` on the main thread once its
+   subagent reports green — don't let parallel agents race on the
+   checklist file.
 
 4. Stage the code changes AND the checklist update together, and propose a
    commit message of the form
