@@ -2,7 +2,7 @@
 description: Implement the next unchecked items from a checklist
 ---
 
-Checklist (optionally followed by item numbers or a count): $ARGUMENTS
+Checklist (optionally followed by item numbers, a count, or `--serial`): $ARGUMENTS
 
 You are performing **Stage 3 → code execution** of the brain pipeline.
 
@@ -16,16 +16,19 @@ You are performing **Stage 3 → code execution** of the brain pipeline.
    surface them and stop.
 
 2. Select work:
+   - If I passed `--serial`, take the next **one** unchecked item only and
+     work it on the main thread — no delegation. Use this when items share
+     files, have ordering dependencies, or I want to review each in turn.
    - If I specified item numbers or a count, take those.
-   - Otherwise take the next **one** unchecked item.
-   - If I selected multiple items and two or more are genuinely
-     independent (touch different files, no shared "done when", no
-     ordering dependency), say so and offer to delegate them to parallel
-     subagents — one Agent per independent item — instead of doing them
-     serially. Keep dependent or same-file items on the main thread to
+   - Otherwise (the default) take **all** remaining unchecked items.
+   - Within the selected set, fan out the genuinely independent items
+     (touch different files, no shared "done when", no ordering
+     dependency) to parallel subagents — one Agent per independent item.
+     Keep dependent or same-file items on the main thread, sequenced, to
      avoid conflicting edits. Per CLAUDE.md, subagents are a last resort
-     for real isolation/parallelism, so only suggest this when the
-     parallelism is real; ask before spawning.
+     for real isolation/parallelism, so only fan out where the parallelism
+     is real. If nothing is safely parallelizable, just work the set
+     serially on the main thread.
 
 3. For each selected item (or for each subagent, if delegating):
    - Implement it exactly as scoped. If the item turns out to be wrong or
@@ -45,8 +48,9 @@ You are performing **Stage 3 → code execution** of the brain pipeline.
    commit message of the form
    `<scope>: <item summary> (brain: <checklist-filename>: "<first words of item>")`.
    Never reference items by number — checklists get edited and regenerated,
-   numbers dangle; quoted text is greppable forever. Do not commit unless I
-   confirm.
+   numbers dangle; quoted text is greppable forever. When several items were
+   done in one run, propose one commit per item (or per coherent group) so
+   each stays revertable. Do not commit unless I confirm.
 
 5. If implementation contradicted the architecture doc in any durable way,
    draft an ADR in `brain/3-decisions/` using the template and tell me.
