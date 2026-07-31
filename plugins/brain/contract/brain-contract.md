@@ -1,4 +1,3 @@
-<!-- BRAIN:START v1.0.0 -->
 # Project Brain — Operating Contract
 
 This repository contains a markdown knowledge graph in `brain/`. It is the single
@@ -148,38 +147,3 @@ the whole board.
 4. If neither exists and the task genuinely needs a decision, suggest
    `/brain:plan` first.
 5. Trivial fixes (typos, small bugs) skip the pipeline — just fix them.
-<!-- BRAIN:END -->
-
-## This repo is also the plugin source
-
-Everything above is the generated contract block — `/brain:sync` replaces it
-wholesale. Everything below is this repo's own, and survives sync.
-
-This repository is three things at once:
-
-1. **The marketplace** — `.claude-plugin/marketplace.json`
-2. **The plugin** — `plugins/brain/` (commands, templates, lint, contract)
-3. **A consumer of itself** — its own `brain/` graph, planning its own development
-
-The framework layer lives ONLY in `plugins/brain/`. This repo deliberately has
-no `.claude/commands/` copies and no symlink into the plugin: it consumes its
-own plugin through the real install path, so distribution is exercised rather
-than assumed.
-
-```
-/plugin marketplace add .
-/plugin install brain@project-brain
-```
-
-While iterating on a command, `claude --plugin-dir ./plugins/brain` loads the
-working tree directly and takes precedence over the installed copy.
-
-`brain/_templates/` and `tools/brain-lint.sh` are this repo's consumer copies —
-refresh them from the plugin rather than editing in place, exactly as any other
-repo would. Lint fails if they drift, so `/brain:sync` is not optional here.
-
-When changing framework behavior, the change lands in `plugins/brain/` and
-must stay consistent across four surfaces: the command that performs it, the
-contract that states it, `brain-lint.sh` if it is mechanically checkable, and
-`brain/README.md` if it changes how a human works. A rule that exists only in
-prose will decay — prefer making it lintable or structurally impossible.
