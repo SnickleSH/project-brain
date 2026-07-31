@@ -1,0 +1,13 @@
+{
+  "name": "project-brain",
+  "owner": {
+    "name": "SnickleSH"
+  },
+  "plugins": [
+    {
+      "name": "brain",
+      "source": "./plugins/brain",
+      "description": "Markdown knowledge graph and execution pipeline that lives inside a repo: capture, triage, plan, break down, execute."
+    }
+  ]
+}

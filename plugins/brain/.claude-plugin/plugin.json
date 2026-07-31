@@ -1,0 +1,11 @@
+{
+  "name": "brain",
+  "description": "An in-repo markdown knowledge graph and execution pipeline. Capture raw input, triage it into facts/tasks/logs/designs, synthesize designs, derive checklists, execute them as code.",
+  "version": "1.0.0",
+  "author": {
+    "name": "SnickleSH"
+  },
+  "homepage": "https://github.com/SnickleSH/project-brain",
+  "repository": "https://github.com/SnickleSH/project-brain",
+  "license": "MIT"
+}
