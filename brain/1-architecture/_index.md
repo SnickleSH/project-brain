@@ -6,7 +6,7 @@ links: []
 
 # Architecture index
 
-One line per doc: what it owns. Maintained automatically by /plan — this file
+One line per doc: what it owns. Maintained automatically by /brain:plan — this file
 is regenerable navigation, not state. Domains with 3+ docs become a subfolder
 with an overview doc.
 
