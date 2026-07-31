@@ -16,4 +16,4 @@ description: Example skill shape — delete after reading. Shows how distilled p
 ## Related brain docs
 - [[some-architecture-doc]]
 
-<!-- 2026-06-12: created via /distill -->
+<!-- 2026-06-12: created via /brain:distill -->
