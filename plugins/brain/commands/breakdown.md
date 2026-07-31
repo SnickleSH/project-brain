@@ -11,7 +11,18 @@ You are performing **Stage 2 → low-level handoff** of the brain pipeline.
    and skim the actual codebase areas it touches so the checklist matches
    reality, not assumptions.
 
-2. Write `brain/2-checklists/<same-slug>.md` using
+   This command produces **derived** checklists only (`status: open`), one per
+   design, disposable, dying with the feature. Work that merely *arrived* —
+   shallow, no design behind it — never comes through here: `/brain:triage`
+   puts it on the standing backlog directly. If the argument you were given is
+   not an architecture doc, say so and point at `/brain:triage` instead of
+   inventing a design to decompose.
+
+2. Write the checklist at the same path under `brain/2-checklists/` that the
+   design has under `brain/1-architecture/` — subfolders included, so
+   `1-architecture/health/training-program.md` yields
+   `2-checklists/health/training-program.md`. The contract requires checklists
+   to mirror architecture; writing them flat loses that. Use
    `brain/_templates/checklist.md`. Requirements for items:
    - Each item is **one commit-sized unit of work**: concrete file paths,
      function/module names, and a verifiable "done when" condition.
@@ -27,6 +38,6 @@ You are performing **Stage 2 → low-level handoff** of the brain pipeline.
    `links:` entry in the architecture doc pointing to the checklist.
 
 4. Finish by printing the checklist path, item count, and the suggested next
-   command (`/execute <checklist>`).
+   command (`/brain:execute <checklist>`).
 
 Do not write any implementation code in this command.

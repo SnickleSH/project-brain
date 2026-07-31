@@ -20,11 +20,22 @@ You are performing **Stage 1 → high-level planning** of the brain pipeline.
      load-bearing claims against the actual codebase before they enter an
      architecture doc, and mark unverified ones as open questions. Do NOT
      ingest state/progress/task-tracker files at all — note their existence,
-     tell me to rescue any in-flight work via /capture, and skip them.
+     tell me to rescue any in-flight work via /brain:capture, and skip them.
+   - **Stage only judgment and intent.** brain-lint hard-fails on
+     non-markdown or >100KB files under `brain/`, so a raw export staged into
+     the inbox breaks every commit until it is cleaned up. Bulk goes to
+     `data/` (gitignored) with a `brain/4-reference/` runbook; only the
+     conclusions enter the inbox.
 
 1. Read every file in `brain/0-inbox/` (the inbox contains only unprocessed
    notes — processed ones live in `brain/_archive/`). Identify the ones
    relevant to the topic above.
+   If the inbox is full of shallow material — tasks, stray facts, log
+   entries — say so and recommend `/brain:triage` first. `/brain:plan` is for
+   material that needs a decision; it should not be the toll gate every note
+   passes through. A note left in the inbox by triage, or carrying an
+   `## Extracted` section, is design residue: synthesize that, and do not
+   re-synthesize what triage already routed elsewhere.
    If the topic is empty, list unprocessed notes grouped by apparent theme
    and ask me which to synthesize — then stop and wait.
    BATCHING GUARD: if more than ~15 notes are relevant, do NOT read all
@@ -39,7 +50,9 @@ You are performing **Stage 1 → high-level planning** of the brain pipeline.
 3. Route non-design material first: notes that are durable FACTS rather
    than design input (API quirks, runbooks, environment setup, glossary,
    "X silently breaks when Y") go to `brain/4-reference/<topic>.md` —
-   create or append, keep one file per topic. Then write (or update)
+   create or append, keep one file per topic, and give a newly created topic
+   file the standard `status` / `created` / `links` frontmatter. Then write
+   (or update)
    `brain/1-architecture/<slug>.md` using
    `brain/_templates/architecture.md` as the skeleton. The doc must:
    - State the problem in 2–3 sentences before any solution.
@@ -48,19 +61,38 @@ You are performing **Stage 1 → high-level planning** of the brain pipeline.
      flag that it deserves an ADR in `brain/3-decisions/`.
    - Reference source notes and related docs via `[[wikilinks]]`.
    - Stay under ~150 lines. If it wants to be longer, split by domain.
-   - EVIDENCE PRESERVATION: copy each load-bearing fact from the source
-     notes into the doc's `## Evidence` section as one line
-     (`fact — origin, date`). Sources get archived out of git, so any fact
-     a decision rests on must survive in the doc itself.
+   - EVIDENCE BY REFERENCE: every load-bearing fact must survive in **git**,
+     which is not the same as surviving in this doc. `brain/4-reference/` is
+     committed, deduplicated, and one-file-per-topic — it is the right home,
+     and step 3 already routes facts there. So `## Evidence` holds:
+     one `[[reference-topic]]` wikilink per supporting topic, plus only
+     those dated observations that are genuinely specific to this design and
+     belong nowhere else. Do NOT copy facts that live in `4-reference/`.
+     This keeps Evidence bounded: reference dedupes on append, so the doc
+     grows by links rather than by copies. It is rule 1 (links over
+     duplication) applied to evidence.
+     If a source note carries an `## Extracted` section, every
+     `brain/4-reference/` destination named there becomes a link in
+     `## Evidence` before the note is archived. That section is the handoff
+     record from `/brain:triage` and it does not survive archiving — miss it
+     and the evidence chain breaks precisely on the notes triage touched.
+     Lint FAILS on an `## Evidence` link that does not resolve to a committed
+     file, so verify each one lands before you archive.
+   - SUPERSEDE, DON'T ACCUMULATE: when updating an existing doc, rewrite
+     `## Evidence` to what the *current* design rests on. Drop lines the
+     design no longer cites. Evidence is not an append-only ledger — that is
+     what made docs grow without bound.
 
 4. Archive the consumed notes: for each inbox note you synthesized, set
    `status: processed` in frontmatter, add a `links:` entry pointing to the
    new architecture doc, then MOVE the file from `brain/0-inbox/` to
    `brain/_archive/` (create the folder if missing; it is gitignored).
    Keep filenames unchanged. Do not delete or rewrite note bodies.
-   Because the archive never reaches git, the architecture doc must contain
-   everything the design needs — never rely on an archived note as a source
-   of truth.
+   Because the archive never reaches git, everything the design depends on
+   must already live in a COMMITTED brain file — this doc, or a
+   `brain/4-reference/` topic it links to. Never leave a load-bearing fact
+   reachable only through `brain/_archive/`, and never cite an archived note
+   as a source of truth. Verify this before you archive, not after.
 
 5. Update `brain/1-architecture/_index.md`: add/adjust the one-line entry
    for the doc you wrote. If the doc crossed ~150 lines or its domain now has
@@ -69,6 +101,6 @@ You are performing **Stage 1 → high-level planning** of the brain pipeline.
 
 6. Finish by printing: the path of the doc you wrote, the notes you archived
    (now in `brain/_archive/`), and the suggested next command
-   (`/breakdown <doc>`).
+   (`/brain:breakdown <doc>`).
 
 Do not write any code or checklists in this command.
