@@ -222,6 +222,28 @@ system: a rule that can only be stated in prose will eventually be violated by
 an agent for whom creating a file is free. Prefer rules that are lintable, or
 structurally impossible to break.
 
+### Two gates, because git hooks don't travel
+
+`core.hooksPath` is local config, so a fresh clone runs no git hooks until
+someone sets it by hand — and the absence of enforcement looks exactly like
+passing. So the plugin carries its own gate:
+
+| | covers | travels? |
+|---|---|---|
+| git `pre-commit` hook | commits typed in a terminal | no — per clone, needs `git config core.hooksPath` |
+| plugin `PreToolUse` hook | commits issued by an agent | **yes** — ships with the plugin, no setup |
+
+The plugin hook runs `brain-lint` before any agent-issued `git commit` and
+blocks it on failure, in every repo and every clone with zero configuration.
+It honours `--no-verify`: a gate with no bypass gets disabled wholesale rather
+than bypassed once.
+
+A `SessionStart` hook reports the gaps the plugin cannot close — hooks present
+but inert because `core.hooksPath` is unset, or a `pre-commit` file that exists
+without the execute bit (git skips those silently, printing one `hint:` line).
+It reports and never runs `git config` for you; a plugin quietly rewriting your
+repo's configuration is the wrong trade.
+
 Relatedly: architecture docs carry an `## Evidence` section holding
 `[[reference-topic]]` links rather than copied facts. The requirement is that
 load-bearing facts survive in **git**, and `4-reference/` is committed and

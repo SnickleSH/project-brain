@@ -92,6 +92,12 @@ after every plugin update, and it is not set at all in a git hook's
 environment, which is where this script does its most important work.
 `/brain:sync` is what keeps the copy current.
 
+The plugin already gates agent-issued commits through its own `PreToolUse`
+hook, which needs no setup and works in every clone. The git hook below is what
+covers commits typed in a terminal — worth installing, but say plainly in your
+report that it does NOT travel to a fresh clone, since `core.hooksPath` is
+local config.
+
 Then, if this is a git repo — resolve the hooks directory with
 `git rev-parse --git-path hooks` rather than assuming `.git/hooks`, since
 `core.hooksPath` and worktrees both move it:
