@@ -100,12 +100,18 @@ Then, if this is a git repo — resolve the hooks directory with
 
   ```sh
   #!/usr/bin/env sh
-  exec tools/brain-lint.sh
+  exec bash tools/brain-lint.sh
   ```
 
-  then `chmod +x` it. **The chmod is not optional**: git silently skips a
+  then `chmod +x` the hook. **The chmod is not optional**: git silently skips a
   non-executable hook, printing only a `hint:` line, so the commit succeeds and
   every mechanical guarantee in this contract quietly becomes advisory.
+  Note the hook invokes the linter via `bash` rather than executing it: git
+  stores file modes, and a rebase or stash cycle can drop the linter's own exec
+  bit. Invoking it explicitly makes the check independent of that.
+- Chaining into an existing hook → guard on `-f`, never `-x`. An `-x` guard
+  turns a lost exec bit into a silently skipped check, which is strictly worse
+  than a noisy failure.
 - A `pre-commit` hook exists and already mentions `brain-lint` → leave it, but
   still verify it is executable.
 - A `pre-commit` hook exists without it → do not edit it silently. Print the
