@@ -11,7 +11,22 @@
 # It cannot be referenced inside the plugin: ${CLAUDE_PLUGIN_ROOT} moves on
 # every plugin update and is not set at all in a git hook's environment.
 set -uo pipefail
-cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
+
+# Locate the brain. It is NOT always at the git root: a monorepo can carry one
+# per service (services/intelligence/brain/). Resolving only to the git root
+# made a nested brain silently unlinted — `[ -d brain ] || exit 0` returned
+# success having checked nothing, which is the worst possible failure for a
+# tool whose job is to fail loudly.
+# Order: explicit override, then the script's own parent (installed at
+# <root>/tools/brain-lint.sh), then the git root.
+SELF=$(cd "$(dirname "$0")" 2>/dev/null && pwd) || SELF=
+if [ -n "${BRAIN_ROOT:-}" ] && [ -d "$BRAIN_ROOT/brain" ]; then
+  cd "$BRAIN_ROOT"
+elif [ -n "$SELF" ] && [ -d "$SELF/../brain" ]; then
+  cd "$SELF/.."
+else
+  cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
+fi
 [ -d brain ] || exit 0
 FAIL=0; WARN=0
 err()  { echo "✗ $1"; FAIL=1; }
@@ -85,9 +100,12 @@ if [ -f "$IDX" ]; then
     done
     err "index drift: $f missing from _index.md"
   done < <(find brain/1-architecture -name '*.md' ! -name '_index.md' 2>/dev/null)
+  # An index entry must RESOLVE, but it need not be an architecture doc — a
+  # routing table that also points at ADRs or reference topics is useful, not
+  # broken. Only the forward direction above is scoped to 1-architecture.
   while IFS= read -r slug; do
     [ -n "$slug" ] || continue
-    [ -n "$(resolve "$slug" -path 'brain/1-architecture/*')" ] || err "index drift: [[${slug}]] in _index.md has no file"
+    [ -n "$(resolve "$slug")" ] || err "index drift: [[${slug}]] in _index.md has no file"
   done < <(grep -ohE '\[\[[^]|#]+' "$IDX" 2>/dev/null | sed 's/\[\[//' | sort -u)
   # Basenames must stay globally unique or [[wikilinks]] become ambiguous.
   DUPES=$(find brain/1-architecture -name '*.md' ! -name '_index.md' -exec basename {} \; 2>/dev/null | sort | uniq -d)
